@@ -677,6 +677,37 @@
         <button class="action-btn" onclick="closeSkins()">Bezárás</button>
     </div>
 
+    <!-- Firebase Realtime Database SDK (a felhő-szinkronhoz) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script>
+        // ============================================================
+        // IDE MÁSOLD BE A SAJÁT FIREBASE KONFIGURÁCIÓDAT!
+        // (Firebase Console -> Project settings -> General -> Your apps -> SDK setup and configuration)
+        // Útmutató lent, a chat válaszban.
+        // ============================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgirCsg9WpRY1WF6u-36r501VIbz_z0vw",
+            authDomain: "cps-arena-dd56f.firebaseapp.com",
+            databaseURL: "https://cps-arena-dd56f-default-rtdb.firebaseio.com",
+            projectId: "cps-arena-dd56f",
+            storageBucket: "cps-arena-dd56f.firebasestorage.app",
+            messagingSenderId: "830351171913",
+            appId: "1:830351171913:web:de911318c59ad4c2133a98"
+        };
+
+        let firebaseReady = false;
+        let dbRef = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            dbRef = firebase.database().ref('cps_arena_global_data');
+            firebaseReady = true;
+            console.log('[FIREBASE] Sikeresen inicializálva.');
+        } catch (e) {
+            console.error('[FIREBASE] Inicializálási hiba - ellenőrizd a firebaseConfig adatokat!', e);
+        }
+    </script>
+
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -788,13 +819,22 @@
             triggerGlobalSync();
         }
 
+        let isApplyingRemoteUpdate = false; // véd az ellen, hogy a saját frissítésünk visszapörögjön
+
         function triggerGlobalSync() {
             syncChannel.postMessage({ type: 'DATA_UPDATED' });
             window.dispatchEvent(new Event('storage_forced_update'));
-            syncToCloudStorage();
+            if (!isApplyingRemoteUpdate) {
+                syncToCloudStorage();
+            }
         }
 
         async function syncToCloudStorage() {
+            if (!firebaseReady || !dbRef) {
+                console.error('[CLOUD SYNC] Firebase nincs inicializálva - ellenőrizd a firebaseConfig-ot a fájl elején!');
+                logConsole('⚠️ Cloud sync HIBA: Firebase nincs beállítva');
+                return;
+            }
             try {
                 const payload = {
                     users: localStorage.getItem(STORAGE_KEY_USERS),
@@ -803,60 +843,55 @@
                     boost: localStorage.getItem(STORAGE_KEY_BOOST),
                     time: Date.now()
                 };
-                const res = await fetch('https://json.geations.workers.dev/cps_global_sync_data', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!res.ok) {
-                    const bodyText = await res.text().catch(() => '(nincs válasz szöveg)');
-                    console.error('[CLOUD SYNC] POST sikertelen. Státusz:', res.status, 'Válasz:', bodyText);
-                    logConsole(`⚠️ Cloud sync HIBA (POST ${res.status})`);
-                } else {
-                    console.log('[CLOUD SYNC] POST rendben elküldve.', payload);
-                }
-            } catch(e) {
-                console.error('[CLOUD SYNC] A fetch teljesen elhasalt (hálózat/CORS hiba):', e);
-                logConsole('⚠️ Cloud sync HIBA: nem sikerült elérni a szervert (' + e.message + ')');
+                await dbRef.set(payload);
+                console.log('[CLOUD SYNC] Firebase-be elmentve.', payload);
+            } catch (e) {
+                console.error('[CLOUD SYNC] Firebase mentési hiba:', e);
+                logConsole('⚠️ Cloud sync HIBA: ' + e.message);
             }
         }
 
-        async function pollCloudStorage() {
-            try {
-                const res = await fetch('https://json.geations.workers.dev/cps_global_sync_data');
-                if (!res.ok) {
-                    console.error('[CLOUD SYNC] GET sikertelen. Státusz:', res.status);
-                    return;
-                }
-                const data = await res.json();
-                console.log('[CLOUD SYNC] Adat érkezett a szerverről:', data);
-                if (data && data.time) {
-                    let needsRefresh = false;
-                    if (data.users && data.users !== localStorage.getItem(STORAGE_KEY_USERS)) {
-                        localStorage.setItem(STORAGE_KEY_USERS, data.users);
-                        needsRefresh = true;
-                    }
-                    if (data.ann !== localStorage.getItem(STORAGE_KEY_ANN)) {
-                        localStorage.setItem(STORAGE_KEY_ANN, data.ann || '');
-                        needsRefresh = true;
-                    }
-                    if (data.events !== localStorage.getItem(STORAGE_KEY_EVENTS)) {
-                        localStorage.setItem(STORAGE_KEY_EVENTS, data.events || '');
-                        needsRefresh = true;
-                    }
-                    if (data.boost !== localStorage.getItem(STORAGE_KEY_BOOST)) {
-                        localStorage.setItem(STORAGE_KEY_BOOST, data.boost || '');
-                        needsRefresh = true;
-                    }
-                    if (needsRefresh) {
-                        checkGlobalState();
-                    }
-                } else {
-                    console.warn('[CLOUD SYNC] A szerver válasza üres vagy hibás formátumú:', data);
-                }
-            } catch(e) {
-                console.error('[CLOUD SYNC] Poll fetch elhasalt:', e);
+        // Valós idejű figyelő: azonnal lefut, amint BÁRKI (bármelyik böngészőben) ír a Firebase-be.
+        // Nincs szükség pollingra / setIntervalre.
+        function startRealtimeCloudListener() {
+            if (!firebaseReady || !dbRef) {
+                console.error('[CLOUD SYNC] Nem tudom elindítani a realtime listenert - Firebase nincs inicializálva.');
+                return;
             }
+            dbRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data || !data.time) return;
+
+                console.log('[CLOUD SYNC] Valós idejű frissítés érkezett:', data);
+                let needsRefresh = false;
+                isApplyingRemoteUpdate = true;
+
+                if (data.users && data.users !== localStorage.getItem(STORAGE_KEY_USERS)) {
+                    localStorage.setItem(STORAGE_KEY_USERS, data.users);
+                    needsRefresh = true;
+                }
+                if ((data.ann || '') !== (localStorage.getItem(STORAGE_KEY_ANN) || '')) {
+                    localStorage.setItem(STORAGE_KEY_ANN, data.ann || '');
+                    needsRefresh = true;
+                }
+                if ((data.events || '') !== (localStorage.getItem(STORAGE_KEY_EVENTS) || '')) {
+                    localStorage.setItem(STORAGE_KEY_EVENTS, data.events || '');
+                    needsRefresh = true;
+                }
+                if ((data.boost || '') !== (localStorage.getItem(STORAGE_KEY_BOOST) || '')) {
+                    localStorage.setItem(STORAGE_KEY_BOOST, data.boost || '');
+                    needsRefresh = true;
+                }
+
+                if (needsRefresh) {
+                    checkGlobalState();
+                    syncChannel.postMessage({ type: 'DATA_UPDATED' });
+                }
+                isApplyingRemoteUpdate = false;
+            }, (error) => {
+                console.error('[CLOUD SYNC] Realtime listener hiba (pl. Database Rules blokkolja az olvasást):', error);
+                logConsole('⚠️ Cloud sync listener HIBA: ' + error.message);
+            });
         }
 
         function switchTab(tab) {
@@ -1237,7 +1272,7 @@
         window.addEventListener('storage', checkGlobalState);
         window.addEventListener('storage_forced_update', checkGlobalState);
         setInterval(checkGlobalState, 400);
-        setInterval(pollCloudStorage, 1500);
+        startRealtimeCloudListener(); // valós idejű Firebase figyelő, nincs szükség pollingra
 
         const themes = {
             neon: { primary: '#ff007f', secondary: '#7928ca', accent: '#00f0ff', hueStart: 300, hueRange: 60 },
