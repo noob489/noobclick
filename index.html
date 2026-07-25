@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ULTIMATE CPS ARENA 3000 - TRUE CLOUD SYNC</title>
+    <style>
+        :root {
+            --primary: #ff007f;
+            --secondary: #7928ca;
+            --accent: #00f0ff;
+            --bg: #0a0a12;
+            --card-bg: rgba(20, 20, 35, 0.85);
+            --text: #ffffff;
+            --glow: rgba(255, 0, 127, 0.5);
+            --gold: #ffcc00;
+            --success: #00ff66;
+            --warning: #ffaa00;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        #announcementBanner {
+            position: absolute;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, #ff007f, #7928ca, #00f0ff);
+            background-size: 200% 200%;
+            animation: gradientMove 3s ease infinite;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 0 0 20px 20px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            z-index: 1000;
+            box-shadow: 0 8px 30px rgba(255, 0, 127, 0.7);
+            text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: top 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            pointer-events: none;
+        }
+
+        #announcementBanner.show { top: 0px; }
+        #announcementBanner.warn { background: linear-gradient(90deg, #ffaa00, #ff3300); }
+        #announcementBanner.info { background: linear-gradient(90deg, #00f0ff, #0044ff); }
+        #announcementBanner.event { background: linear-gradient(90deg, #ff00cc, #ff9900); }
+
+        .avatar-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            filter: drop-shadow(0px 2px 5px rgba(0,0,0,0.5));
+            border-radius: 50%;
+        }
+
+        .avatar-fallback {
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #activeEventsContainer {
+            position: absolute;
+            top: 70px;
+            display: flex;
+            gap: 10px;
+            z-index: 90;
+        }
+
+        .event-badge {
+            background: linear-gradient(45deg, #ff9900, #ff0000);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 900;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(255, 85, 0, 0.6);
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.05); }
+        }
+
+        nav {
+            position: absolute;
+            top: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 10px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 8px 18px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .nav-btn {
+            background: transparent;
+            color: rgba(255, 255, 255, 0.7);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
+        .nav-btn.active {
+            background: var(--primary);
+            color: #fff;
+            box-shadow: 0 0 15px var(--glow);
+        }
+
+        .admin-nav-btn {
+            background: linear-gradient(45deg, #ffcc00, #ff0055) !important;
+            color: black !important;
+            display: none;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.6);
+            animation: pulse 1.5s infinite alternate;
+        }
+
+        #userBar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-weight: bold;
+        }
+
+        #userBar span { color: var(--accent); }
+        .role-tag {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .role-owner { background: #ffcc00; color: black; }
+        .role-admin { background: #ff007f; color: white; }
+        .role-user { background: #444; color: white; }
+
+        .logout-btn {
+            background: #ff3333;
+            color: white;
+            border: none;
+            padding: 5px 12px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        #hud {
+            position: absolute;
+            top: 110px;
+            z-index: 10;
+            display: flex;
+            gap: 25px;
+            background: var(--card-bg);
+            backdrop-filter: blur(12px);
+            padding: 12px 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 90px;
+        }
+
+        .stat label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .stat span {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
+        }
+
+        #clickCount { color: var(--primary); text-shadow: 0 0 10px var(--glow); }
+
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            cursor: crosshair;
+        }
+
+        .hint {
+            position: absolute;
+            bottom: 25px;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.95rem;
+            pointer-events: none;
+            letter-spacing: 1px;
+        }
+
+        .modal {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(12, 12, 22, 0.95);
+            border: 2px solid var(--primary);
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            z-index: 200;
+            box-shadow: 0 0 40px var(--glow);
+            backdrop-filter: blur(20px);
+            min-width: 340px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .admin-modal-mega {
+            min-width: 950px;
+            border: 2px solid var(--gold);
+            box-shadow: 0 0 80px rgba(255, 204, 0, 0.5);
+            background: rgba(8, 8, 15, 0.98);
+        }
+
+        .admin-header-title {
+            font-size: 2.2rem;
+            color: var(--gold);
+            text-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .admin-dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .dash-card {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .dash-card h4 { font-size: 0.75rem; color: #aaa; text-transform: uppercase; }
+        .dash-card p { font-size: 1.5rem; font-weight: bold; color: var(--gold); }
+
+        .admin-section-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: left;
+        }
+
+        .admin-card-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 18px;
+            border-radius: 16px;
+        }
+
+        .admin-card-box h3 {
+            font-size: 1.1rem;
+            color: var(--accent);
+            margin-bottom: 12px;
+        }
+
+        .event-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .event-toggle-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .event-toggle-btn.active {
+            background: linear-gradient(45deg, #ff0055, #ffcc00);
+            color: black;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.5);
+            border-color: transparent;
+        }
+
+        .custom-boost-box {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px dashed rgba(255, 255, 255, 0.15);
+        }
+
+        .auth-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 5px;
+            border-radius: 15px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px 0;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 0 10px var(--glow);
+        }
+
+        .auth-form { display: none; }
+        .auth-form.active { display: block; }
+
+        .auth-input, .admin-input, .admin-select {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .admin-select option { background: #111; color: white; }
+
+        .action-btn {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 100%;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px var(--glow);
+        }
+
+        .admin-danger-btn {
+            background: linear-gradient(45deg, #ff3333, #880000) !important;
+            color: white !important;
+        }
+
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .admin-table th, .admin-table td {
+            padding: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        .admin-table th { background: rgba(255, 255, 255, 0.1); color: var(--gold); }
+
+        .role-btn {
+            padding: 3px 8px;
+            border-radius: 5px;
+            border: none;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 1px;
+        }
+
+        #adminConsoleLog {
+            background: #000;
+            color: #00ff66;
+            font-family: monospace;
+            padding: 10px;
+            border-radius: 10px;
+            height: 70px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            text-align: left;
+            margin-top: 15px;
+            border: 1px solid rgba(0, 255, 102, 0.3);
+        }
+
+        .skin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 15px;
+        }
+
+        .skin-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .skin-card:hover, .skin-card.active {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .rank-badge {
+            display: inline-block;
+            margin: 10px 0;
+            padding: 8px 20px;
+            border-radius: 30px;
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
+            font-weight: 900;
+            font-size: 1.2rem;
+            letter-spacing: 1px;
+            box-shadow: 0 0 20px var(--glow);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="announcementBanner">
+        <div id="avatarContainer">
+            <img id="announcementImg" src="channels4_profile-removebg-preview.png" class="avatar-img" alt="Avatar" onerror="handleImageError()">
+        </div>
+        <span id="announcementText">Üdvözlünk az Ultimate CPS Arénában!</span>
+    </div>
+
+    <div id="activeEventsContainer"></div>
+
+    <nav id="topNav">
+        <button class="nav-btn active" onclick="setMode(5)">5 MP</button>
+        <button class="nav-btn" onclick="setMode(10)">10 MP</button>
+        <button class="nav-btn" onclick="setMode(20)">20 MP</button>
+        <button class="nav-btn" onclick="setMode('inf')">♾️ Végtelen</button>
+        <button class="nav-btn" onclick="openSkins()">🎨 Témák</button>
+        <button id="adminNavBtn" class="nav-btn admin-nav-btn" onclick="openAdmin()">⚡ GOD-MODE ADMIN ⚡</button>
+    </nav>
+
+    <div id="userBar">
+        👤 <span id="usernameDisplay">Vendég</span>
+        <span id="roleBadgeDisplay" class="role-tag role-user">USER</span>
+        <button class="logout-btn" onclick="logout()">Kilépés</button>
+    </div>
+
+    <div id="hud">
+        <div class="stat">
+            <label>Idő</label>
+            <span id="timerSpan">5.0s</span>
+        </div>
+        <div class="stat">
+            <label>Kattintás</label>
+            <span id="clickCount">0</span>
+        </div>
+        <div class="stat">
+            <label>CPS</label>
+            <span id="cpsSpan">0.0</span>
+        </div>
+        <div class="stat">
+            <label>Rekord CPS</label>
+            <span id="highScoreSpan">0.0</span>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="hint" id="hintText">Kattints bárhova a teszt indításához!</div>
+
+    <div id="authModal" class="modal" style="display: block;">
+        <h2>Fiók Kezelés</h2>
+        <div class="auth-tabs">
+            <button id="loginTabBtn" class="tab-btn active" onclick="switchTab('login')">Bejelentkezés</button>
+            <button id="registerTabBtn" class="tab-btn" onclick="switchTab('register')">Regisztráció</button>
+        </div>
+
+        <div id="loginForm" class="auth-form active">
+            <input type="text" id="loginUsername" class="auth-input" placeholder="Felhasználónév">
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Jelszó">
+            <div id="loginError" style="color:red; font-size: 0.8rem; margin-top:5px;"></div>
+            <button class="action-btn" onclick="handleLogin()">Belépés</button>
+        </div>
+
+        <div id="registerForm" class="auth-form">
+            <input type="text" id="regUsername" class="auth-input" placeholder="Új felhasználónév">
+            <input type="password" id="regPassword" class="auth-input" placeholder="Jelszó">
+            <div id="regError" style="color:red; font-size: 0.8rem; margin-top:5px;"></div>
+            <button class="action-btn" onclick="handleRegister()">Regisztráció</button>
+        </div>
+    </div>
+
+    <div id="adminModal" class="modal admin-modal-mega">
+        <h2 class="admin-header-title">⚡ GOD-MODE CONTROL CENTER ⚡</h2>
+        
+        <div class="admin-dashboard-stats">
+            <div class="dash-card">
+                <h4>Felhasználók</h4>
+                <p id="dashUserCount">0</p>
+            </div>
+            <div class="dash-card">
+                <h4>Szerver CPS Rekord</h4>
+                <p id="dashTopCPS">0.0</p>
+            </div>
+            <div class="dash-card">
+                <h4>Aktív Eventek</h4>
+                <p id="dashActiveEvents">0</p>
+            </div>
+            <div class="dash-card">
+                <h4>Szerver Státusz</h4>
+                <p style="color: var(--success);">CLOUD SYNC</p>
+            </div>
+        </div>
+
+        <div class="admin-section-grid">
+            <div class="admin-card-box">
+                <h3>📢 ÉLŐ BEJELENTÉS HUB</h3>
+                <input type="text" id="adminAnnounceInput" class="admin-input" placeholder="Üzenet szövege...">
+                
+                <label style="font-size:0.75rem; color:#aaa; margin-top:4px; display:block;">📁 Válassz egy képet a gépedről (link nélkül!):</label>
+                <input type="file" id="adminImageFileInput" accept="image/*" class="admin-input">
+
+                <select id="adminAnnounceType" class="admin-select">
+                    <option value="normal">👑 Admin Bejelentés (Pink)</option>
+                    <option value="event">🔥 Event Bejelentés (Lila-Narancs)</option>
+                    <option value="info">🩵 Információ (Kék)</option>
+                    <option value="warn">⚠️ Figyelmeztetés (Piros)</option>
+                </select>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="action-btn" style="background: linear-gradient(45deg, #00f0ff, #0044ff); margin:0;" onclick="publishAnnouncement()">Kiküldés</button>
+                    <button class="action-btn admin-danger-btn" style="margin:0; width: 40%;" onclick="clearAnnouncement()">Törlés</button>
+                </div>
+            </div>
+
+            <div class="admin-card-box">
+                <h3>🎉 EVENT MÁTRIX & IDŐZÍTETT BOOST</h3>
+                <div class="event-grid">
+                    <button id="evt2x" class="event-toggle-btn" onclick="toggleMatrixEvent('2x')">🔥 2X CPS Boost</button>
+                    <button id="evt3x" class="event-toggle-btn" onclick="toggleMatrixEvent('3x')">🚀 3X Overclock</button>
+                    <button id="evtSlow" class="event-toggle-btn" onclick="toggleMatrixEvent('slow')">⏱️ Slow-Mo Time</button>
+                    <button id="evtRainbow" class="event-toggle-btn" onclick="toggleMatrixEvent('rainbow')">🌈 Neon Party</button>
+                </div>
+                
+                <div style="margin-top: 8px;">
+                    <button class="event-toggle-btn" id="evt100x" style="width: 100%; background: linear-gradient(45deg, #ff0055, #ffcc00); color:black;" onclick="toggleMatrixEvent('100x')">⚡ 100X GOD-MODE MULTIPLIER</button>
+                </div>
+
+                <div class="custom-boost-box">
+                    <label style="font-size:0.8rem; color:#aaa; font-weight:bold;">✨ CUSTOM CPS SZORZÓ ÉS IDŐZÍTŐ:</label>
+                    <div style="display: flex; gap: 8px; margin-top: 5px;">
+                        <input type="number" id="customBoostVal" class="admin-input" style="margin:0; flex:1;" placeholder="Szorzó (pl: 10)" min="1">
+                        <input type="number" id="customBoostTime" class="admin-input" style="margin:0; flex:1;" placeholder="Idő MP-ben (pl: 30)" min="1">
+                        <button id="btnCustomBoost" class="event-toggle-btn" style="padding: 0 15px; background: #00f0ff; color: black;" onclick="toggleCustomBoost()">Indítás</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card-box" style="margin-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin:0;">👥 FELHASZNÁLÓI ADATBÁZIS ÉS JOGOK (OWNER / ADMIN MOD)</h3>
+                <button style="background: #00f0ff; color: black; border: none; padding: 5px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.8rem;" onclick="renderAdminDashboard()">🔄 Adatok Frissítése</button>
+            </div>
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Felhasználó</th>
+                        <th>Rang / Jog</th>
+                        <th>5s Rekord</th>
+                        <th>10s Rekord</th>
+                        <th>Jelszó Módosítás</th>
+                        <th>Akciók & Jogadás</th>
+                    </tr>
+                </thead>
+                <tbody id="adminUserList"></tbody>
+            </table>
+        </div>
+
+        <div id="adminConsoleLog">
+            [SYSTEM]: Netlify Cloud Global Sync & God-Mode Admin Hub Betöltve.<br>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 15px;">
+            <button class="action-btn admin-danger-btn" onclick="resetAllScoresGlobal()">⚠️ ÖSSZES REKORD NULLÁZÁSA</button>
+            <button class="action-btn" style="background: #333;" onclick="closeAdmin()">Bezárás</button>
+        </div>
+    </div>
+
+    <div id="resultModal" class="modal">
+        <h2>Teszt Vége! ⚡</h2>
+        <div class="rank-badge" id="rankBadge">GODLIKE</div>
+        <p>Kattintások: <span id="finalClicks">0</span></p>
+        <p>Átlagos CPS: <span id="finalCPS">0.00</span></p>
+        <p>Mód rekord: <span id="modalHighScore">0.00</span></p>
+        <button class="action-btn" onclick="resetAll()">Újraindítás</button>
+    </div>
+
+    <div id="skinModal" class="modal">
+        <h2>Válassz Témát</h2>
+        <div class="skin-grid">
+            <div class="skin-card active" onclick="applySkin('neon')">💖 Neon Pink</div>
+            <div class="skin-card" onclick="applySkin('cyber')">🩵 Cyber Cyan</div>
+            <div class="skin-card" onclick="applySkin('matrix')">💚 Matrix Green</div>
+            <div class="skin-card" onclick="applySkin('fire')">🔥 Fire Gold</div>
+        </div>
+        <button class="action-btn" onclick="closeSkins()">Bezárás</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const clickCountEl = document.getElementById('clickCount');
+        const timerSpan = document.getElementById('timerSpan');
+        const cpsSpan = document.getElementById('cpsSpan');
+        const highScoreSpan = document.getElementById('highScoreSpan');
+        const hintText = document.getElementById('hintText');
+        const resultModal = document.getElementById('resultModal');
+        const skinModal = document.getElementById('skinModal');
+        const authModal = document.getElementById('authModal');
+        const adminModal = document.getElementById('adminModal');
+        const adminNavBtn = document.getElementById('adminNavBtn');
+        const usernameDisplay = document.getElementById('usernameDisplay');
+        const roleBadgeDisplay = document.getElementById('roleBadgeDisplay');
+        const announcementBanner = document.getElementById('announcementBanner');
+        const announcementText = document.getElementById('announcementText');
+        const avatarContainer = document.getElementById('avatarContainer');
+        const activeEventsContainer = document.getElementById('activeEventsContainer');
+
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        let particles = [];
+        let shockwaves = [];
+        let totalClicks = 0;
+        let isRunning = false;
+        let isFinished = false;
+        let startTime = 0;
+        let currentMode = 5;
+        let timerInterval = null;
+        let currentTheme = 'neon';
+
+        let currentUser = null;
+        let currentUserRole = 'user'; 
+        let highScores = { 5: 0, 10: 0, 20: 0, inf: 0 };
+        let activeEvents = { '2x': false, '3x': false, 'slow': false, 'rainbow': false, '100x': false };
+        let customBoostValue = 1;
+        let customBoostEndTime = 0;
+        let announcementTimeout = null;
+        let lastAnnouncementId = '';
+
+        const syncChannel = new BroadcastChannel('cps_arena_netlify_sync');
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function logConsole(msg) {
+            const consoleEl = document.getElementById('adminConsoleLog');
+            if (consoleEl) {
+                const time = new Date().toLocaleTimeString();
+                consoleEl.innerHTML += `[${time}] ${msg}<br>`;
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }
+        }
+
+        function handleImageError() {
+            avatarContainer.innerHTML = '<span class="avatar-fallback">👑</span>';
+        }
+
+        function playPopSound(pitch = 1) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(180 * pitch, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(700 * pitch, audioCtx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.08);
+        }
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const STORAGE_KEY_USERS = 'cps_users_netlify_global_v3';
+        const STORAGE_KEY_ANN = 'cps_global_announcement_net_v3';
+        const STORAGE_KEY_EVENTS = 'cps_matrix_events_net_v3';
+        const STORAGE_KEY_BOOST = 'cps_custom_boost_net_v3';
+
+        function getUsers() {
+            let users = JSON.parse(localStorage.getItem(STORAGE_KEY_USERS) || '{}');
+            let isModified = false;
+            
+            const mainOwnerName = 'noob';
+            const mainOwnerPass = 'noob.real';
+
+            if (!users[mainOwnerName] || users[mainOwnerName].password !== mainOwnerPass || users[mainOwnerName].role !== 'owner') {
+                users[mainOwnerName] = { 
+                    password: mainOwnerPass, 
+                    role: 'owner', 
+                    highScores: users[mainOwnerName]?.highScores || { 5: 0, 10: 0, 20: 0, inf: 0 } 
+                };
+                isModified = true;
+            }
+
+            if (isModified) {
+                saveUsers(users);
+            }
+            
+            return users;
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+            triggerGlobalSync();
+        }
+
+        function triggerGlobalSync() {
+            syncChannel.postMessage({ type: 'DATA_UPDATED' });
+            window.dispatchEvent(new Event('storage_forced_update'));
+            syncToCloudStorage();
+        }
+
+        async function syncToCloudStorage() {
+            try {
+                const payload = {
+                    users: localStorage.getItem(STORAGE_KEY_USERS),
+                    ann: localStorage.getItem(STORAGE_KEY_ANN),
+                    events: localStorage.getItem(STORAGE_KEY_EVENTS),
+                    boost: localStorage.getItem(STORAGE_KEY_BOOST),
+                    time: Date.now()
+                };
+                const res = await fetch('https://json.geations.workers.dev/cps_global_sync_data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const bodyText = await res.text().catch(() => '(nincs válasz szöveg)');
+                    console.error('[CLOUD SYNC] POST sikertelen. Státusz:', res.status, 'Válasz:', bodyText);
+                    logConsole(`⚠️ Cloud sync HIBA (POST ${res.status})`);
+                } else {
+                    console.log('[CLOUD SYNC] POST rendben elküldve.', payload);
+                }
+            } catch(e) {
+                console.error('[CLOUD SYNC] A fetch teljesen elhasalt (hálózat/CORS hiba):', e);
+                logConsole('⚠️ Cloud sync HIBA: nem sikerült elérni a szervert (' + e.message + ')');
+            }
+        }
+
+        async function pollCloudStorage() {
+            try {
+                const res = await fetch('https://json.geations.workers.dev/cps_global_sync_data');
+                if (!res.ok) {
+                    console.error('[CLOUD SYNC] GET sikertelen. Státusz:', res.status);
+                    return;
+                }
+                const data = await res.json();
+                console.log('[CLOUD SYNC] Adat érkezett a szerverről:', data);
+                if (data && data.time) {
+                    let needsRefresh = false;
+                    if (data.users && data.users !== localStorage.getItem(STORAGE_KEY_USERS)) {
+                        localStorage.setItem(STORAGE_KEY_USERS, data.users);
+                        needsRefresh = true;
+                    }
+                    if (data.ann !== localStorage.getItem(STORAGE_KEY_ANN)) {
+                        localStorage.setItem(STORAGE_KEY_ANN, data.ann || '');
+                        needsRefresh = true;
+                    }
+                    if (data.events !== localStorage.getItem(STORAGE_KEY_EVENTS)) {
+                        localStorage.setItem(STORAGE_KEY_EVENTS, data.events || '');
+                        needsRefresh = true;
+                    }
+                    if (data.boost !== localStorage.getItem(STORAGE_KEY_BOOST)) {
+                        localStorage.setItem(STORAGE_KEY_BOOST, data.boost || '');
+                        needsRefresh = true;
+                    }
+                    if (needsRefresh) {
+                        checkGlobalState();
+                    }
+                } else {
+                    console.warn('[CLOUD SYNC] A szerver válasza üres vagy hibás formátumú:', data);
+                }
+            } catch(e) {
+                console.error('[CLOUD SYNC] Poll fetch elhasalt:', e);
+            }
+        }
+
+        function switchTab(tab) {
+            document.getElementById('loginForm').classList.toggle('active', tab === 'login');
+            document.getElementById('registerForm').classList.toggle('active', tab === 'register');
+            document.getElementById('loginTabBtn').classList.toggle('active', tab === 'login');
+            document.getElementById('registerTabBtn').classList.toggle('active', tab === 'register');
+        }
+
+        function handleLogin() {
+            const user = document.getElementById('loginUsername').value.trim();
+            const pass = document.getElementById('loginPassword').value.trim();
+            const users = getUsers();
+
+            if (users[user] && users[user].password === pass) {
+                loginUser(user);
+            } else {
+                document.getElementById('loginError').textContent = 'Hibás adatok!';
+            }
+        }
+
+        function handleRegister() {
+            const user = document.getElementById('regUsername').value.trim();
+            const pass = document.getElementById('regPassword').value.trim();
+            const users = getUsers();
+
+            if (!user || !pass) {
+                document.getElementById('regError').textContent = 'Töltsd ki mindkét mezőt!';
+                return;
+            }
+
+            if (users[user]) {
+                document.getElementById('regError').textContent = 'Foglalt név!';
+                return;
+            }
+            users[user] = { password: pass, role: 'user', highScores: { 5: 0, 10: 0, 20: 0, inf: 0 } };
+            saveUsers(users);
+            
+            loginUser(user);
+        }
+
+        function loginUser(user) {
+            currentUser = user;
+            const users = getUsers();
+            const uData = users[user];
+            currentUserRole = uData.role || 'user';
+            highScores = uData.highScores || { 5: 0, 10: 0, 20: 0, inf: 0 };
+            
+            usernameDisplay.textContent = currentUser;
+            roleBadgeDisplay.textContent = currentUserRole.toUpperCase();
+            roleBadgeDisplay.className = `role-tag role-${currentUserRole}`;
+
+            authModal.style.display = 'none';
+            adminNavBtn.style.display = (currentUserRole === 'admin' || currentUserRole === 'owner') ? 'inline-block' : 'none';
+            checkGlobalState();
+            resetAll();
+            logConsole(`Sikeres belépés: ${currentUser} (${currentUserRole})`);
+        }
+
+        function logout() {
+            currentUser = null;
+            currentUserRole = 'user';
+            adminNavBtn.style.display = 'none';
+            authModal.style.display = 'block';
+            resetAll();
+        }
+
+        function saveUserHighScores() {
+            if (!currentUser) return;
+            const users = getUsers();
+            if (users[currentUser]) {
+                users[currentUser].highScores = highScores;
+                saveUsers(users);
+            }
+        }
+
+        function publishAnnouncement() {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'owner') return;
+            const text = document.getElementById('adminAnnounceInput').value.trim();
+            const type = document.getElementById('adminAnnounceType').value;
+            const fileInput = document.getElementById('adminImageFileInput');
+
+            if (!text) return;
+
+            if (fileInput.files && fileInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveAndSendAnnouncement(text, e.target.result, type);
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                saveAndSendAnnouncement(text, 'channels4_profile-removebg-preview.png', type);
+            }
+        }
+
+        function saveAndSendAnnouncement(text, customImg, type) {
+            const annObject = { text, customImg, type, id: Date.now().toString() };
+            localStorage.setItem(STORAGE_KEY_ANN, JSON.stringify(annObject));
+            triggerGlobalSync();
+            logConsole(`Új Bejelentés kiküldve: "${text}"`);
+            checkGlobalState();
+            document.getElementById('adminAnnounceInput').value = '';
+            document.getElementById('adminImageFileInput').value = '';
+        }
+
+        function clearAnnouncement() {
+            localStorage.removeItem(STORAGE_KEY_ANN);
+            triggerGlobalSync();
+            announcementBanner.classList.remove('show');
+            logConsole("Bejelentés törölve.");
+        }
+
+        function toggleMatrixEvent(evtKey) {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'owner') return;
+            activeEvents[evtKey] = !activeEvents[evtKey];
+            localStorage.setItem(STORAGE_KEY_EVENTS, JSON.stringify(activeEvents));
+            triggerGlobalSync();
+            logConsole(`Event Módosítva: ${evtKey.toUpperCase()} -> ${activeEvents[evtKey] ? 'BE' : 'KI'}`);
+            checkGlobalState();
+        }
+
+        function toggleCustomBoost() {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'owner') return;
+
+            if (customBoostValue > 1 && customBoostEndTime > Date.now()) {
+                customBoostValue = 1;
+                customBoostEndTime = 0;
+                localStorage.removeItem(STORAGE_KEY_BOOST);
+                logConsole('Custom CPS Boost kikapcsolva.');
+            } else {
+                const valInput = document.getElementById('customBoostVal');
+                const timeInput = document.getElementById('customBoostTime');
+                let val = parseFloat(valInput.value) || 10;
+                let durationSec = parseFloat(timeInput.value) || 30;
+
+                customBoostValue = val;
+                customBoostEndTime = Date.now() + (durationSec * 1000);
+
+                const boostData = { val: customBoostValue, endTime: customBoostEndTime };
+                localStorage.setItem(STORAGE_KEY_BOOST, JSON.stringify(boostData));
+                logConsole(`Custom CPS Boost Aktiválva: ${customBoostValue}x szorzó (${durationSec} mp)`);
+            }
+            triggerGlobalSync();
+            checkGlobalState();
+        }
+
+        function resetAllScoresGlobal() {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'owner') return;
+            if (confirm("Biztosan nullázni akarod az ÖSSZES játékos rekordját?")) {
+                let users = getUsers();
+                for (let u in users) {
+                    users[u].highScores = { 5: 0, 10: 0, 20: 0, inf: 0 };
+                }
+                saveUsers(users);
+                highScores = { 5: 0, 10: 0, 20: 0, inf: 0 };
+                logConsole("ÖSSZES REKORD GLOBÁLISAN NULLÁZVA!");
+                checkGlobalState();
+                renderAdminDashboard();
+            }
+        }
+
+        function checkGlobalState() {
+            const annDataStr = localStorage.getItem(STORAGE_KEY_ANN);
+            if (annDataStr) {
+                const annData = JSON.parse(annDataStr);
+                if (annData.id !== lastAnnouncementId) {
+                    lastAnnouncementId = annData.id;
+                    announcementText.textContent = annData.text;
+
+                    const imgSrc = annData.customImg || 'channels4_profile-removebg-preview.png';
+                    avatarContainer.innerHTML = `<img src="${imgSrc}" class="avatar-img" alt="Avatar" onerror="handleImageError()">`;
+
+                    announcementBanner.className = 'show ' + (annData.type || '');
+                    clearTimeout(announcementTimeout);
+                    announcementTimeout = setTimeout(() => announcementBanner.classList.remove('show'), 8000);
+                }
+            } else {
+                announcementBanner.classList.remove('show');
+                lastAnnouncementId = '';
+            }
+
+            const storedCustomBoost = localStorage.getItem(STORAGE_KEY_BOOST);
+            if (storedCustomBoost) {
+                const bData = JSON.parse(storedCustomBoost);
+                if (Date.now() < bData.endTime) {
+                    customBoostValue = bData.val;
+                    customBoostEndTime = bData.endTime;
+                } else {
+                    customBoostValue = 1;
+                    customBoostEndTime = 0;
+                    localStorage.removeItem(STORAGE_KEY_BOOST);
+                }
+            } else {
+                customBoostValue = 1;
+                customBoostEndTime = 0;
+            }
+
+            const btnCustomBoost = document.getElementById('btnCustomBoost');
+            if (btnCustomBoost) {
+                if (customBoostValue > 1 && Date.now() < customBoostEndTime) {
+                    btnCustomBoost.textContent = 'Kikapcsolás';
+                    btnCustomBoost.style.background = '#ff3333';
+                    btnCustomBoost.style.color = 'white';
+                } else {
+                    btnCustomBoost.textContent = 'Indítás';
+                    btnCustomBoost.style.background = '#00f0ff';
+                    btnCustomBoost.style.color = 'black';
+                }
+            }
+
+            const evtData = localStorage.getItem(STORAGE_KEY_EVENTS);
+            if (evtData) activeEvents = JSON.parse(evtData);
+
+            activeEventsContainer.innerHTML = '';
+            const names = { '2x': '🔥 2X CPS', '3x': '🚀 3X OVERCLOCK', 'slow': '⏱️ SLOW-MO', 'rainbow': '🌈 NEON PARTY', '100x': '⚡ 100X GOD-MODE' };
+            
+            for (let key in activeEvents) {
+                if (activeEvents[key]) {
+                    const badge = document.createElement('div');
+                    badge.className = 'event-badge';
+                    badge.textContent = names[key];
+                    activeEventsContainer.appendChild(badge);
+                }
+                const btn = document.getElementById('evt' + key.charAt(0).toUpperCase() + key.slice(1));
+                if (btn) btn.classList.toggle('active', activeEvents[key]);
+            }
+
+            if (customBoostValue > 1 && Date.now() < customBoostEndTime) {
+                const remSec = Math.ceil((customBoostEndTime - Date.now()) / 1000);
+                const badge = document.createElement('div');
+                badge.className = 'event-badge';
+                badge.style.background = 'linear-gradient(45deg, #7928ca, #00f0ff)';
+                badge.textContent = `✨ ${customBoostValue}X CUSTOM BOOST (${remSec}s)`;
+                activeEventsContainer.appendChild(badge);
+            }
+
+            if (currentUser) {
+                const users = getUsers();
+                if (users[currentUser]) {
+                    currentUserRole = users[currentUser].role || 'user';
+                    highScores = users[currentUser].highScores || highScores;
+                    roleBadgeDisplay.textContent = currentUserRole.toUpperCase();
+                    roleBadgeDisplay.className = `role-tag role-${currentUserRole}`;
+                    adminNavBtn.style.display = (currentUserRole === 'admin' || currentUserRole === 'owner') ? 'inline-block' : 'none';
+                }
+            }
+
+            if (adminModal.style.display === 'block') {
+                renderAdminDashboard(false);
+            }
+        }
+
+        function openAdmin() {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'owner') return;
+            renderAdminDashboard();
+            adminModal.style.display = 'block';
+        }
+
+        function closeAdmin() { adminModal.style.display = 'none'; }
+
+        function renderAdminDashboard() {
+            const users = getUsers();
+            const userKeys = Object.keys(users);
+            document.getElementById('dashUserCount').textContent = userKeys.length;
+
+            let topCPS = 0;
+            for (let u in users) {
+                if (users[u].highScores && users[u].highScores[5] > topCPS) {
+                    topCPS = users[u].highScores[5];
+                }
+            }
+            document.getElementById('dashTopCPS').textContent = parseFloat(topCPS).toFixed(1);
+
+            let activeCount = Object.values(activeEvents).filter(Boolean).length;
+            if (customBoostValue > 1 && Date.now() < customBoostEndTime) activeCount++;
+            document.getElementById('dashActiveEvents').textContent = activeCount;
+
+            const tbody = document.getElementById('adminUserList');
+            tbody.innerHTML = '';
+            for (let uname in users) {
+                const u = users[uname];
+                const tr = document.createElement('tr');
+                const hs5 = u.highScores ? parseFloat(u.highScores[5] || 0).toFixed(1) : '0.0';
+                const hs10 = u.highScores ? parseFloat(u.highScores[10] || 0).toFixed(1) : '0.0';
+                const role = u.role || 'user';
+                const currentPass = u.password || '';
+
+                let roleButtonsHtml = '';
+                if (currentUserRole === 'owner' && uname !== currentUser) {
+                    roleButtonsHtml = `
+                        <button class="role-btn" style="background:#444; color:white;" onclick="changeUserRole('${uname}', 'user')">User</button>
+                        <button class="role-btn" style="background:#ff007f; color:white;" onclick="changeUserRole('${uname}', 'admin')">Admin</button>
+                        <button class="role-btn" style="background:#ffcc00; color:black;" onclick="changeUserRole('${uname}', 'owner')">Owner</button>
+                    `;
+                }
+
+                tr.innerHTML = `
+                    <td><strong>${uname}</strong></td>
+                    <td><span class="role-tag role-${role}">${role.toUpperCase()}</span></td>
+                    <td>${hs5} CPS</td>
+                    <td>${hs10} CPS</td>
+                    <td>
+                        <div style="display: flex; gap: 4px;">
+                            <input type="text" id="pass_${uname}" value="${currentPass}" class="admin-input" style="padding:4px; margin:0; font-size:0.75rem; flex:1;">
+                            <button style="background:#00f0ff; color:black; border:none; padding:3px 8px; border-radius:5px; cursor:pointer; font-weight:bold; white-space:nowrap;" onclick="adminChangePassword('${uname}')">Mentés</button>
+                        </div>
+                    </td>
+                    <td>
+                        <button style="background:#ff9900; border:none; padding:3px 8px; border-radius:5px; cursor:pointer; font-weight:bold;" onclick="adminResetUser('${uname}')">Nullázás</button>
+                        ${(uname !== currentUser && uname !== 'noob') ? `<button style="background:#ff3333; color:white; border:none; padding:3px 8px; border-radius:5px; cursor:pointer; font-weight:bold;" onclick="adminDeleteUser('${uname}')">Törlés</button>` : ''}
+                        ${roleButtonsHtml}
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        function adminChangePassword(uname) {
+            if (currentUserRole !== 'admin' && currentUserRole !== 'owner') return;
+            const inputEl = document.getElementById(`pass_${uname}`);
+            const newPass = inputEl ? inputEl.value.trim() : '';
+
+            if (!newPass) {
+                alert("A jelszó nem lehet üres!");
+                return;
+            }
+
+            let users = getUsers();
+            if (users[uname]) {
+                users[uname].password = newPass;
+                saveUsers(users);
+                logConsole(`Sikeres jelszóváltoztatás a(z) ${uname} felhasználónak.`);
+                alert(`A(z) ${uname} felhasználó jelszavát sikeresen módosítottad!`);
+            }
+        }
+
+        function changeUserRole(targetUser, newRole) {
+            if (currentUserRole !== 'owner') {
+                alert("Csak OWNER módosíthatja a rangokat!");
+                return;
+            }
+            let users = getUsers();
+            if (users[targetUser]) {
+                users[targetUser].role = newRole;
+                saveUsers(users);
+                logConsole(`Rang Módosítva: ${targetUser} -> [${newRole.toUpperCase()}]`);
+                renderAdminDashboard();
+            }
+        }
+
+        function adminResetUser(u) {
+            let users = getUsers();
+            if (users[u]) {
+                users[u].highScores = { 5: 0, 10: 0, 20: 0, inf: 0 };
+                saveUsers(users);
+                logConsole(`Felhasználó rekordjai nullázva: ${u}`);
+                renderAdminDashboard();
+            }
+        }
+
+        function adminDeleteUser(u) {
+            let users = getUsers();
+            delete users[u];
+            saveUsers(users);
+            logConsole(`Felhasználó törölve: ${u}`);
+            renderAdminDashboard();
+        }
+
+        syncChannel.onmessage = function (event) {
+            if (event.data && event.data.type === 'DATA_UPDATED') {
+                checkGlobalState();
+                if (adminModal.style.display === 'block') {
+                    renderAdminDashboard();
+                }
+            }
+        };
+
+        window.addEventListener('storage', checkGlobalState);
+        window.addEventListener('storage_forced_update', checkGlobalState);
+        setInterval(checkGlobalState, 400);
+        setInterval(pollCloudStorage, 1500);
+
+        const themes = {
+            neon: { primary: '#ff007f', secondary: '#7928ca', accent: '#00f0ff', hueStart: 300, hueRange: 60 },
+            cyber: { primary: '#00f0ff', secondary: '#0044ff', accent: '#ff00aa', hueStart: 180, hueRange: 40 },
+            matrix: { primary: '#00ff66', secondary: '#006622', accent: '#ccff00', hueStart: 100, hueRange: 40 },
+            fire: { primary: '#ffaa00', secondary: '#ff2200', accent: '#ffff00', hueStart: 10, hueRange: 40 }
+        };
+
+        function applySkin(skin) {
+            currentTheme = skin;
+            const t = themes[skin];
+            document.documentElement.style.setProperty('--primary', t.primary);
+            document.documentElement.style.setProperty('--secondary', t.secondary);
+            document.documentElement.style.setProperty('--accent', t.accent);
+            document.documentElement.style.setProperty('--glow', t.primary + '80');
+        }
+
+        class Particle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = Math.random() * 6 + 3;
+                const t = themes[currentTheme];
+                this.color = activeEvents['rainbow'] 
+                    ? `hsl(${Math.random() * 360}, 100%, 60%)`
+                    : `hsl(${t.hueStart + Math.random() * t.hueRange}, 100%, 60%)`;
+                this.vx = (Math.random() - 0.5) * 16;
+                this.vy = (Math.random() - 0.5) * 16;
+                this.alpha = 1;
+            }
+            update() {
+                this.vx *= 0.95;
+                this.vy *= 0.95;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.alpha -= 0.015;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Shockwave {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.radius = 5;
+                this.alpha = 1;
+            }
+            update() { this.radius += 4; this.alpha -= 0.04; }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.alpha);
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.strokeStyle = activeEvents['rainbow'] ? `hsl(${Math.random() * 360}, 100%, 50%)` : '#00f0ff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.includes(mode) || (mode === 'inf' && btn.textContent.includes('Végtelen')));
+            });
+            resetAll();
+        }
+
+        function updateHighScoreDisplay() {
+            highScoreSpan.textContent = parseFloat(highScores[currentMode] || 0).toFixed(1);
+        }
+
+        function startTest() {
+            isRunning = true;
+            isFinished = false;
+            startTime = Date.now();
+            hintText.style.display = 'none';
+            timerInterval = setInterval(updateTimer, 50);
+        }
+
+        function updateTimer() {
+            if (!isRunning) return;
+            let timeMultiplier = activeEvents['slow'] ? 0.5 : 1.0;
+            const elapsed = ((Date.now() - startTime) / 1000) * timeMultiplier;
+
+            if (currentMode === 'inf') {
+                timerSpan.textContent = elapsed.toFixed(1) + 's';
+            } else {
+                const remaining = Math.max(0, currentMode - elapsed);
+                timerSpan.textContent = remaining.toFixed(1) + 's';
+                if (remaining <= 0) endTest();
+            }
+
+            const currentCPS = elapsed > 0 ? (totalClicks / elapsed) : 0;
+            cpsSpan.textContent = currentCPS.toFixed(1);
+        }
+
+        function getRank(cps) {
+            if (cps < 5) return '🐌 CSIGA';
+            if (cps < 9) return '🎮 GAMER';
+            if (cps < 14) return '⚡ FAST CLICKER';
+            if (cps < 20) return '👑 CPS GOD';
+            return '🛸 HACKER / ALIEN';
+        }
+
+        function endTest() {
+            isRunning = false;
+            isFinished = true;
+            clearInterval(timerInterval);
+
+            let timeMultiplier = activeEvents['slow'] ? 0.5 : 1.0;
+            const elapsed = ((Date.now() - startTime) / 1000) * timeMultiplier;
+            const finalCPS = totalClicks / Math.max(0.1, elapsed);
+
+            if (finalCPS > (highScores[currentMode] || 0)) {
+                highScores[currentMode] = finalCPS;
+                saveUserHighScores();
+                updateHighScoreDisplay();
+            }
+
+            document.getElementById('finalClicks').textContent = totalClicks;
+            document.getElementById('finalCPS').textContent = finalCPS.toFixed(2);
+            document.getElementById('modalHighScore').textContent = parseFloat(highScores[currentMode]).toFixed(2);
+            document.getElementById('rankBadge').textContent = getRank(finalCPS);
+
+            resultModal.style.display = 'block';
+        }
+
+        function resetAll() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            isFinished = false;
+            totalClicks = 0;
+            particles = [];
+            shockwaves = [];
+            clickCountEl.textContent = '0';
+            cpsSpan.textContent = '0.0';
+            timerSpan.textContent = currentMode === 'inf' ? '0.0s' : currentMode.toFixed(1) + 's';
+            hintText.style.display = 'block';
+            resultModal.style.display = 'none';
+            skinModal.style.display = 'none';
+            adminModal.style.display = 'none';
+            updateHighScoreDisplay();
+        }
+
+        function openSkins() { if (currentUser) skinModal.style.display = 'block'; }
+        function closeSkins() { skinModal.style.display = 'none'; }
+
+        window.addEventListener('pointerdown', (e) => {
+            if (!currentUser) return;
+            if (e.target.closest('nav') || e.target.closest('.modal') || e.target.closest('#userBar') || e.target.closest('#announcementBanner')) return;
+            if (isFinished) return;
+
+            if (!isRunning) startTest();
+
+            let addClicks = 1;
+            if (activeEvents['2x']) addClicks *= 2;
+            if (activeEvents['3x']) addClicks *= 3;
+            if (activeEvents['100x']) addClicks *= 100;
+            
+            if (customBoostValue > 1 && Date.now() < customBoostEndTime) {
+                addClicks *= customBoostValue;
+            }
+
+            totalClicks += addClicks;
+            clickCount.textContent = totalClicks;
+
+            shockwaves.push(new Shockwave(e.clientX, e.clientY));
+            for (let i = 0; i < 15; i++) particles.push(new Particle(e.clientX, e.clientY));
+
+            playPopSound(1 + Math.min(totalClicks * 0.01, 1.2));
+        });
+
+        function animate() {
+            ctx.fillStyle = 'rgba(10, 10, 18, 0.25)';
+            ctx.fillRect(0, 0, width, height);
+
+            shockwaves.forEach((sw, i) => { sw.update(); sw.draw(); if (sw.alpha <= 0) shockwaves.splice(i, 1); });
+            particles.forEach((p, i) => { p.update(); p.draw(); if (p.alpha <= 0) particles.splice(i, 1); });
+
+            requestAnimationFrame(animate);
+        }
+
+        getUsers();
+        checkGlobalState();
+        animate();
+    </script>
+</body>
+</html>
